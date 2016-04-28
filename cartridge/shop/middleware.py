@@ -1,3 +1,4 @@
+# -*- coding: utf- -*-
 from __future__ import unicode_literals
 
 from mezzanine.conf import settings
@@ -30,7 +31,8 @@ class ShopMiddleware(SSLRedirect):
     """
     def process_request(self, request):
         request.cart = Cart.objects.from_request(request)
-        wishlist = request.COOKIES.get("wishlist", "").split(",")
+        wishlist = request.COOKIES.get("wishlist", ""). \
+            decode('utf-8').split(",")
         if not wishlist[0]:
             wishlist = []
         request.wishlist = wishlist

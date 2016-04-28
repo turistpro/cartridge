@@ -87,6 +87,48 @@ class Priced(models.Model):
                 setattr(obj_to, field.name, getattr(self, field.name))
         obj_to.save()
 
+    def live_num_in_stock(self):
+        """
+        Returns the live number in stock, which is
+        ``self.num_in_stock - num in carts``. Also caches the value
+        for subsequent lookups.
+        """
+        if self.num_in_stock is None:
+            return None
+        if not hasattr(self, "_cached_num_in_stock"):
+            num_in_stock = self.num_in_stock
+            carts = Cart.objects.current()
+            items = CartItem.objects.filter(sku=self.sku, cart__in=carts)
+            aggregate = items.aggregate(quantity_sum=models.Sum("quantity"))
+            num_in_carts = aggregate["quantity_sum"]
+            if num_in_carts is not None:
+                num_in_stock = num_in_stock - num_in_carts
+            self._cached_num_in_stock = num_in_stock
+        return self._cached_num_in_stock
+
+    def has_stock(self, quantity=1):
+        """
+        Returns ``True`` if the given quantity is in stock, by checking
+        against ``live_num_in_stock``. ``True`` is returned when
+        ``num_in_stock`` is ``None`` which is how stock control is
+        disabled.
+        """
+        live = self.live_num_in_stock()
+        return live is None or quantity == 0 or live >= quantity
+
+    def update_stock(self, quantity):
+        """
+        Update the stock amount - called when an order is complete.
+        Also update the denormalised stock amount of the product if
+        this is the default variation.
+        """
+        if self.num_in_stock is not None:
+            self.num_in_stock += quantity
+            self.save()
+
+    def get_image(self):
+        pass
+
 
 class Product(Displayable, Priced, RichText, AdminThumbMixin):
     """
@@ -126,7 +168,7 @@ class Product(Displayable, Priced, RichText, AdminThumbMixin):
         """
         updating = self.id is not None
         super(Product, self).save(*args, **kwargs)
-        if updating and not settings.SHOP_USE_VARIATIONS:
+        if updating and settings.SHOP_USE_VARIATIONS:
             default = self.variations.get(default=True)
             self.copy_price_fields_to(default)
 
@@ -144,6 +186,9 @@ class Product(Displayable, Priced, RichText, AdminThumbMixin):
         if default.image:
             self.image = default.image.file.name
         self.save()
+
+    def get_image(self):
+        return self.image
 
 
 @python_2_unicode_compatible
@@ -282,35 +327,6 @@ class ProductVariation(with_metaclass(ProductVariationMetaclass, Priced)):
         """
         return [getattr(self, field.name) for field in self.option_fields()]
 
-    def live_num_in_stock(self):
-        """
-        Returns the live number in stock, which is
-        ``self.num_in_stock - num in carts``. Also caches the value
-        for subsequent lookups.
-        """
-        if self.num_in_stock is None:
-            return None
-        if not hasattr(self, "_cached_num_in_stock"):
-            num_in_stock = self.num_in_stock
-            carts = Cart.objects.current()
-            items = CartItem.objects.filter(sku=self.sku, cart__in=carts)
-            aggregate = items.aggregate(quantity_sum=models.Sum("quantity"))
-            num_in_carts = aggregate["quantity_sum"]
-            if num_in_carts is not None:
-                num_in_stock = num_in_stock - num_in_carts
-            self._cached_num_in_stock = num_in_stock
-        return self._cached_num_in_stock
-
-    def has_stock(self, quantity=1):
-        """
-        Returns ``True`` if the given quantity is in stock, by checking
-        against ``live_num_in_stock``. ``True`` is returned when
-        ``num_in_stock`` is ``None`` which is how stock control is
-        disabled.
-        """
-        live = self.live_num_in_stock()
-        return live is None or quantity == 0 or live >= quantity
-
     def update_stock(self, quantity):
         """
         Update the stock amount - called when an order is complete.
@@ -323,6 +339,9 @@ class ProductVariation(with_metaclass(ProductVariationMetaclass, Priced)):
             if self.default:
                 self.product.num_in_stock = self.num_in_stock
                 self.product.save()
+
+    def get_image(self):
+        return force_text(self.image.file)
 
 
 class Category(Page, RichText):
@@ -478,8 +497,8 @@ class Order(SiteRelated):
             self.total += self.shipping_total
         if self.discount_total is not None:
             self.total -= Decimal(self.discount_total)
-        if self.tax_total is not None:
-            self.total += Decimal(self.tax_total)
+        # if self.tax_total is not None:
+        #     self.total += Decimal(self.tax_total)
         self.save()  # We need an ID before we can add related items.
         for item in request.cart:
             product_fields = [f.name for f in SelectedProduct._meta.fields]
@@ -563,11 +582,14 @@ class Cart(models.Model):
         if created:
             item.description = force_text(variation)
             item.unit_price = variation.price()
-            item.url = variation.product.get_absolute_url()
-            image = variation.image
+            item.url = variation.get_absolute_url()
+            image = variation.get_image()
             if image is not None:
-                item.image = force_text(image.file)
-            variation.product.actions.added_to_cart()
+                item.image = image
+            if settings.SHOP_USE_VARIATIONS is True:
+                variation.product.actions.added_to_cart()
+            else:
+                variation.actions.added_to_cart()
         item.quantity += quantity
         item.save()
 

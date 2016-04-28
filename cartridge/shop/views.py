@@ -67,6 +67,7 @@ def product(request, slug, template="shop/product.html",
             if to_cart:
                 quantity = add_product_form.cleaned_data["quantity"]
                 request.cart.add_item(add_product_form.variation, quantity)
+                # request.cart.add_item(product, quantity)
                 recalculate_cart(request)
                 info(request, _("Item added to cart"))
                 return redirect("shop_cart")
@@ -90,7 +91,8 @@ def product(request, slug, template="shop/product.html",
         "variations_json": variations_json,
         "has_available_variations": any([v.has_price() for v in variations]),
         "related_products": related,
-        "add_product_form": add_product_form
+        "add_product_form": add_product_form,
+        "attributes": product.attributes.select_related("attribute").all()
     }
     context.update(extra_context or {})
     templates = [u"shop/%s.html" % str(product.slug), template]
@@ -137,7 +139,12 @@ def wishlist(request, template="shop/wishlist.html",
     # Remove skus from the cookie that no longer exist.
     published_products = Product.objects.published(for_user=request.user)
     f = {"product__in": published_products, "sku__in": skus}
-    wishlist = ProductVariation.objects.filter(**f).select_related("product")
+    if settings.SHOP_USE_VARIATIONS is True:
+        wishlist = ProductVariation.objects.filter(**f). \
+            select_related("product")
+    else:
+        wishlist = Product.objects.published(for_user=request.user). \
+            filter(sku__in=skus)
     wishlist = sorted(wishlist, key=lambda v: skus.index(v.sku))
     context = {"wishlist_items": wishlist, "error": error}
     context.update(extra_context or {})
@@ -356,10 +363,16 @@ def complete(request, template="shop/complete.html", extra_context=None):
     # Assign product names to each of the items since they're not
     # stored.
     skus = [item.sku for item in items]
-    variations = ProductVariation.objects.filter(sku__in=skus)
-    names = {}
-    for variation in variations.select_related("product"):
-        names[variation.sku] = variation.product.title
+    if settings.SHOP_USE_VARIATIONS is True:
+        variations = ProductVariation.objects.filter(sku__in=skus)
+        names = {}
+        for variation in variations.select_related("product"):
+            names[variation.sku] = variation.product.title
+    else:
+        products = Product.objects.filter(sku__in=skus)
+        names = {}
+        for variation in products:
+            names[variation.sku] = variation.title
     for i, item in enumerate(items):
         setattr(items[i], "name", names[item.sku])
     context = {"order": order, "items": items, "has_pdf": HAS_PDF,

@@ -63,9 +63,9 @@ def _order_totals(context):
     if template_vars.get("discount_total", None) is not None:
         template_vars["order_total"] -= Decimal(
             str(template_vars["discount_total"]))
-    if template_vars.get("tax_total", None) is not None:
-        template_vars["order_total"] += Decimal(
-            str(template_vars["tax_total"]))
+    # if template_vars.get("tax_total", None) is not None:
+    #     template_vars["order_total"] += Decimal(
+    #         str(template_vars["tax_total"]))
     return template_vars
 
 

@@ -51,7 +51,11 @@ def default_tax_handler(request, order_form):
     accessible via ``request.cart``
     """
     settings.use_editable()
-    set_tax(request, _("Tax"), 0)
+    tax = 0
+    for item in request.cart.items.all():
+        print item
+        tax += item.total_price / 118 * 18
+    set_tax(request, _("Tax"), tax)
 
 
 def default_payment_handler(request, order_form, order):
@@ -177,7 +181,7 @@ def send_order_email(request, order):
         from warnings import warn
         warn("Shop email receipt templates have moved from "
              "templates/shop/email/ to templates/email/")
-    send_mail_template(settings.SHOP_ORDER_EMAIL_SUBJECT,
+    send_mail_template(settings.SHOP_ORDER_EMAIL_SUBJECT_FUNC(order_context),
                        receipt_template, settings.SHOP_ORDER_FROM_EMAIL,
                        order.billing_detail_email, context=order_context,
                        addr_bcc=settings.SHOP_ORDER_EMAIL_BCC or None)

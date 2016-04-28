@@ -101,18 +101,27 @@ class AddProductForm(forms.Form):
         if self._to_cart:
             data["unit_price__isnull"] = False
         error = None
+        variation = None
         if self._product is not None:
             # Chosen options will be passed to the product's
             # variations.
-            qs = self._product.variations
+            if settings.SHOP_USE_VARIATIONS is True:
+                qs = self._product.variations
+            else:
+                variation = self._product
         else:
             # A product hasn't been given since we have a direct sku.
-            qs = ProductVariation.objects
+            if settings.SHOP_USE_VARIATIONS is True:
+                qs = ProductVariation.objects
+            else:
+                qs = Product.objects
         try:
-            variation = qs.get(**data)
+            if variation is None:
+                variation = qs.get(**data)
         except ProductVariation.DoesNotExist:
             error = "invalid_options"
         else:
+            print self._product
             # Validate stock if adding to cart.
             if self._to_cart:
                 if not variation.has_stock():
@@ -139,7 +148,10 @@ class CartItemForm(forms.ModelForm):
         """
         Validate that the given quantity is available.
         """
-        variation = ProductVariation.objects.get(sku=self.instance.sku)
+        if settings.SHOP_USE_VARIATIONS is True:
+            variation = ProductVariation.objects.get(sku=self.instance.sku)
+        else:
+            variation = Product.objects.get(sku=self.instance.sku)
         quantity = self.cleaned_data["quantity"]
         if not variation.has_stock(quantity - self.instance.quantity):
             error = ADD_PRODUCT_ERRORS["no_stock_quantity"].rstrip(".")
