@@ -36,7 +36,7 @@ def default_billship_handler(request, order_form):
     """
     if not request.session.get("free_shipping"):
         settings.use_editable()
-        set_shipping(request, _("Flat rate shipping"),
+        set_shipping(request, "Flat rate shipping",
                      settings.SHOP_DEFAULT_SHIPPING_VALUE)
 
 
@@ -55,7 +55,7 @@ def default_tax_handler(request, order_form):
     for item in request.cart.items.all():
         print item
         tax += item.total_price / 118 * 18
-    set_tax(request, _("Tax"), tax)
+    set_tax(request, "Tax", tax)
 
 
 def default_payment_handler(request, order_form, order):
@@ -181,7 +181,7 @@ def send_order_email(request, order):
         from warnings import warn
         warn("Shop email receipt templates have moved from "
              "templates/shop/email/ to templates/email/")
-    send_mail_template(settings.SHOP_ORDER_EMAIL_SUBJECT_FUNC(order_context),
+    send_mail_template(settings.SHOP_ORDER_EMAIL_SUBJECT,
                        receipt_template, settings.SHOP_ORDER_FROM_EMAIL,
                        order.billing_detail_email, context=order_context,
                        addr_bcc=settings.SHOP_ORDER_EMAIL_BCC or None)
