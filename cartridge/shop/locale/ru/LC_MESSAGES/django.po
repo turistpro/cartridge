@@ -72,7 +72,7 @@ msgstr "Стоимость доставки"
 #: checkout.py:55 templates/shop/includes/order_totals.html:34
 #: templates/shop/includes/order_totals.txt:8
 msgid "Tax"
-msgstr ""
+msgstr "НДС"
 
 #: checkout.py:184
 msgid "Details"
@@ -907,7 +907,7 @@ msgstr ""
 
 #: templates/shop/checkout.html:84 templates/shop/wishlist.html:40
 msgid "Continue Shopping"
-msgstr ""
+msgstr "Продолжить покупки"
 
 #: templates/shop/complete.html:4 templates/shop/complete.html.py:61
 msgid "Order Complete"
@@ -1002,7 +1002,7 @@ msgstr "Заказанные товары"
 #: templates/shop/includes/order_totals.html:4
 #: templates/shop/includes/order_totals.txt:2
 msgid "Sub total"
-msgstr "Итого"
+msgstr "Сумма заказа"
 
 #: templates/shop/includes/order_totals.html:12
 #: templates/shop/includes/order_totals.txt:4
@@ -1017,7 +1017,7 @@ msgstr "Доставка"
 #: templates/shop/includes/order_totals.html:39
 #: templates/shop/includes/order_totals.txt:9
 msgid "Total"
-msgstr "Итого"
+msgstr "Итоговая стоимость"
 
 #: templates/shop/includes/payment_fields.html:3
 msgid "Payment Details"
@@ -1025,4 +1025,4 @@ msgstr "Платежная информация"
 
 #: templates/shop/includes/payment_fields.html:8
 msgid "Card Expiry"
-msgstr ""
+msgstr "Срок действия"
