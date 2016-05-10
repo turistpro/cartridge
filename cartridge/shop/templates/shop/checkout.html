@@ -22,7 +22,7 @@ $(function() {$('.middle :input:visible:enabled:first').focus();});
     {% endif %}
 </li>
 {% endfor %}
-<li>{% trans "Complete" %}</li>
+<li>{% trans "Completed" %}</li>
 {% endblock %}
 
 {% block main %}
@@ -37,7 +37,7 @@ $(function() {$('.middle :input:visible:enabled:first').focus();});
     {% block nav-buttons %}
         {% if request.cart.has_items %}
             <div class="form-actions">
-                <input type="submit" class="btn btn-lg btn-primary pull-right" value="{% trans "Next" %}">
+                <input type="submit" class="btn btn-lg btn-primary pull-right" value="{% if CHECKOUT_STEP_LAST %}{% trans "Complete" %}{% else %}{% trans "Next" %}{% endif %}">
                 {% if not CHECKOUT_STEP_FIRST %}
                 <input type="submit" class="btn btn-lg btn-default pull-left" name="back" value="{% trans "Back" %}">
                 {% endif %}
