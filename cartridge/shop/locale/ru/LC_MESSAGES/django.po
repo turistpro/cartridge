@@ -878,7 +878,7 @@ msgstr "Завершить"
 
 #: templates/shop/checkout.html:48
 msgid "Edit Cart"
-msgstr "Редактирова корзину"
+msgstr "Редактировать корзину"
 
 #: templates/shop/checkout.html:61
 msgid "Please correct the errors below."
